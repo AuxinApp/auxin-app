@@ -39,22 +39,25 @@ def has_args(iterable, args):
     except TypeError:
         return False
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
 
+
 @app.route("/", methods=["GET"])
 @login_required
 def main():
     return render_template('current_test.html')
 
+
 @app.route("/spliceAudio", methods=["GET"])
 def runSplice():
     # get params with: request.json['dialSetting']
     if not has_args(request.json, ['file_name', 'file_path', 'startMin', 'startSec', 'endMin', 'endSec']):
-      raise InvalidUsage("Mising necessary parameters.")
+        raise InvalidUsage("Missing necessary parameters.")
 
     return splice(request.json['file_name'],
                   request.json['file_path'],
@@ -63,9 +66,12 @@ def runSplice():
                   request.json['endMin'],
                   request.json['endSec'])
 
+
 """
 Prompts the user to Twitter log in.
 """
+
+
 @app.route("/loginToTwitter", methods=["GET"])
 def authenticateTwitter():
     auth_url, oauth_token, oauth_token_secret = twitter.authenticate()
@@ -73,9 +79,12 @@ def authenticateTwitter():
     session['oauth_token_secret_manual_login'] = oauth_token_secret
     return redirect(auth_url, code=302)
 
+
 """
 Callback from Twitter log in. 
 """
+
+
 @app.route("/loginToTwitterCallback", methods=["GET"])
 def loginToTwitterCallback():
     if not has_args(session, ['oauth_token_manual_login', 'oauth_token_secret_manual_login']):
@@ -88,17 +97,20 @@ def loginToTwitterCallback():
     session['oauth_token_secret'] = oauth_token_secret
     return str(200)
 
+
 @app.route("/sendToTwitter", methods=["GET"])
 def sendToTwitter():
     # get params with: request.json['dialSetting']
     if not has_args(request.args, ['file_name', 'file_path']):
-      raise InvalidUsage("Mising necessary parameters.")
+        raise InvalidUsage("Missing necessary parameters.")
     twitter_obj = twitter.get_twitter_obj(session['oauth_token'], session['oauth_token_secret'])
     return twitter.tweet_audio_as_video(twitter_obj, request.args['file_path'], request.args['file_name'])
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -112,10 +124,11 @@ def login():
         is_login_failed=is_login_failed
     )
 
+
 @app.route('/authenticate', methods=['POST'])
 def authenticate():
     if not has_args(request.form, ['username', 'password']):
-      raise InvalidUsage("Bad request. Please use the proper login page.")
+        raise InvalidUsage("Bad request. Please use the proper login page.")
     username = request.form['username'].lower()
     # our password is NOT encrypted in transit..
     # we need to implement client slide encryption
@@ -128,9 +141,11 @@ def authenticate():
         login_user(user)
         return redirect("./", code=302)
 
+
 @login_manager.unauthorized_handler
 def unauthorized_callback():
     return redirect('/login')
+
 
 @app.route("/uploadContent", methods=["POST"])
 def recieveContent():
@@ -146,7 +161,7 @@ def recieveContent():
             os.makedirs(app.config['UPLOAD_FOLDER'])
 
         message = request.form['message']
-        title = "title" #request.form['title']
+        title = "title"  # request.form['title']
         filename = secure_filename(file.filename)
         basename = os.path.splitext(filename)[0]
         meta_data_path = os.path.join(app.config['UPLOAD_FOLDER'], f'{basename}.json')
@@ -162,10 +177,12 @@ def recieveContent():
         flash('Unsupported file type')
         return str(400)
 
+
 @app.route("/getContent/<path:filename>", methods=["GET"])
 def downloadFile(filename):
     print(filename)
     return send_from_directory("", filename, as_attachment=True)
+
 
 @app.route("/listUserContent", methods=["GET"])
 def listUserContent():
@@ -180,15 +197,20 @@ def listUserContent():
 """
 LinkedIn Login
 """
+
+
 @app.route("/loginToLinkedInAsUser", methods=["GET"])
 def linkedAuthenticate():
     return linkedAuthenticateAs(["w_member_social"])
 
+
 def linkedAuthenticateAs(permissions):
-    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK, permissions=["w_member_social", "r_liteprofile"])
+    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK,
+                                           permissions=["w_member_social", "r_liteprofile"])
     auth.state = f"{hex(random.getrandbits(128))}"
     session["linkedin-hash"] = auth.state
     return redirect(auth.authorization_url)
+
 
 @app.route("/linkedin-authen", methods=["GET"])
 def loginToLinkedInCallback():
@@ -201,7 +223,8 @@ def loginToLinkedInCallback():
     if error is not None:
         raise InvalidUsage("Error occured")
 
-    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK, permissions=["w_member_social", "r_liteprofile"])
+    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK,
+                                           permissions=["w_member_social", "r_liteprofile"])
     print(keys.LINKEDIN_CALLBACK)
     auth.state = csrf_state
     auth.authorization_code = code
@@ -209,19 +232,21 @@ def loginToLinkedInCallback():
 
     return redirect("https://sheltered-meadow-94779.herokuapp.com/")
 
+
 @app.route("/post-content-image", methods=["POST"])
 def linkedInContentPost():
     if session["linkedin-access-token"] is None:
         return redirect("loginToLinkedInAsUser")
 
     # Set up linkedin applicatiom
-    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK, permissions=["w_member_social", "r_liteprofile"])
+    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK,
+                                           permissions=["w_member_social", "r_liteprofile"])
     print(keys.LINKEDIN_CALLBACK)
     auth.token = linkedin.AccessToken(session["linkedin-access-token"][0], session["linkedin-access-token"][1])
     app = linkedin.LinkedInApplication(auth)
 
     # Get User ID
-    response = app.make_request("GET", "https://api.linkedin.com/v2/me", params={"fields" : "id"})
+    response = app.make_request("GET", "https://api.linkedin.com/v2/me", params={"fields": "id"})
     user_id = response.json()['id']
     owner_urn = f"urn:li:person:{user_id}"
 
@@ -238,7 +263,8 @@ def linkedInContentPost():
     for file in request.files.getlist("file"):
         if linkedin_utils.linkedInMediaFilterLogic(file, keys.LINKEDIN_ALLOWED_IMAGE_EXTENSION):
             data = file.read()
-            upload_response_context.append(linkedin_utils.uploadImageToLinkedIn(app, owner_urn=owner_urn, data=data, access_token=auth.token.access_token))
+            upload_response_context.append(linkedin_utils.uploadImageToLinkedIn(app, owner_urn=owner_urn, data=data,
+                                                                                access_token=auth.token.access_token))
 
     text = request.form["message"]
     context = {
@@ -247,9 +273,9 @@ def linkedInContentPost():
             "text": text
         },
         "content": {
-            "contentEntities" : [
+            "contentEntities": [
                 # Iterate through the media contents here
-                {"entity" : f"{asset_urn}"} for (upload_response, asset_urn) in upload_response_context
+                {"entity": f"{asset_urn}"} for (upload_response, asset_urn) in upload_response_context
             ],
             # Add media category here for it to work!
             "shareMediaCategory": "IMAGE"
@@ -260,21 +286,22 @@ def linkedInContentPost():
 
     return str(200)
 
+
 # @app.route("/post-content-video", methods=["POST"])
 def linkedInContentPostVideo():
     if "linkedin-access-token" not in session or session["linkedin-access-token"] is None:
         return redirect("/loginToLinkedInAsUser")
 
-    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK, permissions=["w_member_social", "r_liteprofile"])
+    auth = linkedin.LinkedInAuthentication(keys.LINKEDIN_CLIENT_ID, keys.LINKEDIN_CLIENT_SECRET, keys.LINKEDIN_CALLBACK,
+                                           permissions=["w_member_social", "r_liteprofile"])
     print(keys.LINKEDIN_CALLBACK)
     auth.token = linkedin.AccessToken(session["linkedin-access-token"][0], session["linkedin-access-token"][1])
     app = linkedin.LinkedInApplication(auth)
 
     # Get User ID
-    response = app.make_request("GET", "https://api.linkedin.com/v2/me", params={"fields" : "id"})
+    response = app.make_request("GET", "https://api.linkedin.com/v2/me", params={"fields": "id"})
     user_id = response.json()['id']
     owner_urn = f"urn:li:person:{user_id}"
-
 
     upload_response_context = []
     for file in request.files.getlist("file"):
@@ -341,6 +368,5 @@ def linkedInContentPostVideo():
 
 if __name__ == "__main__":
     app.run(port=3000)
-
 
 # serve(app, host="0.0.0.0", port=3000)

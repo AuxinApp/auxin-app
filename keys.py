@@ -7,7 +7,7 @@ ACCESS_TOKEN_SECRET = "H2K4DtCiOkm06u8GmuP8bSrzGGIKgPcJPnogMpM7KItuk"
 
 LINKEDIN_CLIENT_ID = "862qw7146lv80n"
 LINKEDIN_CLIENT_SECRET = "BPxzuE70cZrps8EQ"
-LINKEDIN_CALLBACK = "https://sheltered-meadow-94779.herokuapp.com/linkedin-authen"
+LINKEDIN_CALLBACK = "https://auxinapp.herokuapp.com/linkedin-authen"
 LINKEDIN_ALLOWED_IMAGE_EXTENSION = [".jpeg", ".png", '.jpg']
 LINKEDIN_ALLOWED_VIDEO_EXTENSION = [".mp4", ".asf", ".flv", ".mpeg-1", ".mpeg-4", "mkv", "webm", "h264/avc", "vp8", "vp9", "wmv2", "wmv3"]
 
