@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, redirect, session, render_template, send_from_directory, flash
 from flask_login import LoginManager, login_user, login_required, current_user
+from flask_talisman import Talisman
 from werkzeug.utils import secure_filename
 
 from waitress import serve
@@ -28,6 +29,7 @@ app.secret_key = "CHANGE_ME"
 login_manager = LoginManager()
 login_manager.init_app(app)
 app.config['UPLOAD_FOLDER'] = 'user_assets'
+Talisman(app, content_security_policy=None)
 
 
 def has_args(iterable, args):
@@ -230,7 +232,7 @@ def loginToLinkedInCallback():
     auth.authorization_code = code
     session["linkedin-access-token"] = auth.get_access_token()
 
-    return redirect("https://auxinapp.herokuapp.com/")
+    return redirect("/")
 
 
 @app.route("/post-content-image", methods=["POST"])
