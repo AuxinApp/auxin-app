@@ -81,8 +81,8 @@ def loginToTwitterCallback():
     if not has_args(session, ['oauth_token_manual_login', 'oauth_token_secret_manual_login']):
         raise InvalidUsage("Log in to Twitter first.")
 
-    oauth_token, oauth_token_secret = twitter.login(session['oauth_token_manual_login'], 
-                                                    session['oauth_token_secret_manual_login'], 
+    oauth_token, oauth_token_secret = twitter.login(session['oauth_token_manual_login'],
+                                                    session['oauth_token_secret_manual_login'],
                                                     request.args.get('oauth_verifier'))
     session['oauth_token'] = oauth_token
     session['oauth_token_secret'] = oauth_token_secret
@@ -106,7 +106,7 @@ def login():
         return redirect("./", code=302)
 
     is_login_failed = request.args.get("login_failed") is not None
-    
+
     return render_template(
         'login.html',
         is_login_failed=is_login_failed
@@ -207,8 +207,8 @@ def loginToLinkedInCallback():
     auth.authorization_code = code
     session["linkedin-access-token"] = auth.get_access_token()
 
-    return redirect("https://auxin-app.herokuapp.com/")
-    
+    return redirect("https://sheltered-meadow-94779.herokuapp.com/")
+
 @app.route("/post-content-image", methods=["POST"])
 def linkedInContentPost():
     if session["linkedin-access-token"] is None:
