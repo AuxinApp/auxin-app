@@ -230,7 +230,7 @@ def loginToLinkedInCallback():
     auth.authorization_code = code
     session["linkedin-access-token"] = auth.get_access_token()
 
-    return redirect("https://sheltered-meadow-94779.herokuapp.com/")
+    return redirect("https://auxinapp.herokuapp.com/")
 
 
 @app.route("/post-content-image", methods=["POST"])
