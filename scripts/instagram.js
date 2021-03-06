@@ -12,12 +12,10 @@ function getInstagramLoginStatus(callback) {
 function connectToInstagram() {
   FB.login(function(response) {
     if (response.authResponse) {
-     console.log('Welcome!  Fetching your information.... ');
-     FB.api('/me', function(response) {
-       console.log('Good to see you, ' + response.name + '.');
-     });
+      // we can retrieve the access token here
+      instagramAuthorizedSuccessCallback();
     } else {
-     console.log('User cancelled login or did not fully authorize.');
+      instagramNotAuthorizedFailureCallback();
     }
   }, {"scope": "instagram_basic,instagram_content_publish"});
 }
@@ -28,11 +26,15 @@ function postMediaToInstagram(payload) {
       user_id = response.authResponse.userID;
       user_access_token = response.authResponse.accessToken;
       postToInstagramCallback(user_id, user_access_token, payload, postMediaToInstagramCallback);
-    }
+    } else {
+      instagramNotAuthorizedFailureCallback();
+    } 
   });
 }
 
 function postToInstagramCallback(user_id, user_access_token, payload, postingCallback) {
+  instagramPostInProgressCallback();
+
   FB.api(
     '/' + user_id + '/accounts',
     'GET',
@@ -41,22 +43,24 @@ function postToInstagramCallback(user_id, user_access_token, payload, postingCal
       "access_token": user_access_token
     },
     function(response) {
-        console.log(response.data[0]);
-        // page_access_token = response.data[0].access_token
+      if (!response || response.error) {
+        instagramNoBusinessAccountFailureCallback();
+      } else {
+        if (response.data.length != 1) {
+          instagramNoBusinessAccountFailureCallback();
+        }
         instagram_id = response.data[0].instagram_business_account.id
-        // page_id = response.data[0].id
-        // page_name = response.data[0].name
         postingCallback(
           payload = payload,
           instagram_id = instagram_id,
           access_token = user_access_token
         );
+      }
     }
   );
 }
 
 function postMediaToInstagramCallback(payload, instagram_id, access_token) { 
-  document.getElementById("instagram_status").innerHTML = "Posting...";
 
   let extension = payload['file_url'].split('.').pop();
   if (extension === 'mp4' || extension === 'mov') {
@@ -87,7 +91,7 @@ function postMediaToInstagramCallback(payload, instagram_id, access_token) {
       }
     );
   } else {
-    document.getElementById("instagram_status").innerHTML = "Unsupported file format :(";
+    instagramUnsupportedFormatFailureCallback();
   }
 }
 
@@ -107,7 +111,7 @@ function monitorContainerUploadStatus(container_id, payload, instagram_id, acces
           monitorContainerUploadStatus(container_id, payload, instagram_id, access_token);
         }, 5000);
       } else {
-        document.getElementById("instagram_status").innerHTML = "Failed :(";
+        instagramPostFailureCallback();
       }
     }
   );
@@ -122,12 +126,43 @@ function instagramUploadContainer(container_id, access_token) {
       'access_token': access_token
     },
     function(response) {
-      console.log(response);
-      instagramPostSuccessCallback();
+      if (!response || response.error) {
+        instagramPostFailureCallback();
+      } else {
+        instagramPostSuccessCallback();
+      }
     }
   );
 }
 
 function instagramPostSuccessCallback() {
   document.getElementById("instagram_status").innerHTML = "Post successful!";
+}
+
+function instagramPostInProgressCallback() {
+  document.getElementById("instagram_status").innerHTML = "Posting...";
+}
+
+function instagramPostSuccessCallback() {
+  document.getElementById("instagram_status").innerHTML = "Post successful!";
+}
+
+function instagramAuthorizedSuccessCallback() {
+  document.getElementById("instagram_status").innerHTML = "Authorization successful!";
+}
+
+function instagramNotAuthorizedFailureCallback() {
+  document.getElementById('instagram_status').innerHTML = 'Please authorize Instagram before posting.';
+}
+
+function instagramNoBusinessAccountFailureCallback() {
+  document.getElementById('instagram_status').innerHTML = 'Cannot retrieve Instagram business account. Please logging in again.';
+}
+
+function instagramPostFailureCallback() {
+  document.getElementById('instagram_status').innerHTML = 'Post failed.';
+}
+
+function instagramUnsupportedFormatFailureCallback() {
+  document.getElementById('instagram_status').innerHTML = 'Post failed. Unsupported file format.';
 }

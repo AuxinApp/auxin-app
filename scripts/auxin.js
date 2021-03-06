@@ -44,7 +44,7 @@ function loadPromotionDetail() {
     request.send();
 }
 
-function deploy(file_name) {
+function deploy(file_name, formData) {
     // selection_element = document.getElementById('sel');
     // selected_name = selection_element.options[selection_element.selectedIndex].value;
     selected_name = file_name;
@@ -68,6 +68,9 @@ function deploy(file_name) {
         if (document.getElementById("fb_post").checked) {
             postMediaToFacebook(payload);
         }
+        if (document.getElementById("linkedin_post").checked) {
+            postMediaToLinkedIn(formData);
+        }
     };
     request.send();
 }
@@ -83,25 +86,17 @@ function submitForm() {
     var fileInput = document.getElementById('file');   
     var filename = fileInput.files[0].name;
     filename = filename.replace(/\.[^/.]+$/, "");
+    var formData = new FormData(document.getElementById("fileUpload"));
 
     var request = new XMLHttpRequest();
     request.open("POST", "./uploadContent"); 
-    request.onload = function(event){ 
-        deploy(filename);
+    request.onload = function(event) { 
+        deploy(filename, formData);
     }; 
-    // or onerror, onabort
-    var formData = new FormData(document.getElementById("fileUpload"));
-
-    if (document.getElementById("linkedin_post").checked) {
-        var linkedin_request = new XMLHttpRequest();
-        linkedin_request.open("POST", "./post-content-image");
-        document.getElementById("linkedin_status").innerHTML = "Posting..."
-        linkedin_request.onload = function(event) {
-            document.getElementById("linkedin_status").innerHTML = "Post successful!"
-        }
-        linkedin_request.send(formData)
+    request.onerror = function(event) {
+        document.getElementById("instagram_status").innerHTML = "Post failed.";
+        document.getElementById("facebook_status").innerHTML = "Post failed.";
+        document.getElementById("linkedin_status").innerHTML = "Post failed.";
     }
-    
     request.send(formData);
-
 }
