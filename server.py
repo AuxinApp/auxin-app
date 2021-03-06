@@ -19,10 +19,14 @@ import requests
 import os
 import glob
 import json
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
 
 from login import User
 
 import twitter
+import hashlib
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_ME"
@@ -112,6 +116,41 @@ def sendToTwitter():
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
+
+@app.route('/create', methods=['POST'])
+def createAccount():
+    if current_user.is_authenticated:
+        return redirect("./", code=302)
+    
+    if not has_args(request.form, ['username', 'password']):
+        raise InvalidUsage("Bad request. Please use the proper login page.")
+
+    username = request.form['username'].lower()
+    password = request.form['password']
+
+    
+    hashed_password = hashlib.sha512(password.encode('utf-8')).hexdigest()        
+
+    cred = credentials.Certificate("auxin-15cd9-firebase-adminsdk-7fm1u-75aa4548a2.json")
+    app = firebase_admin.initialize_app(cred, {
+            'databaseURL': 'https://auxin-15cd9-default-rtdb.firebaseio.com/'
+    })
+
+    users_ref = db.reference('users')
+    id_ref = db.reference('ids')
+    if users_ref.child(username).get() != None:
+        return 'Username Already Exists!'
+    else:
+        users_ref.child(username).set({
+            'password': hashed_password
+        })
+
+        id_ref.push().set({
+            'name': username
+        })
+
+    return "Account created! Procceed to Login"
+
 
 
 @app.route('/login', methods=['GET', 'POST'])
